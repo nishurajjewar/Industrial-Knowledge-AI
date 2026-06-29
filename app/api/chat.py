@@ -1,6 +1,5 @@
 from fastapi import APIRouter
 from pydantic import BaseModel
-
 from app.services.rag import ask_pdf
 
 router = APIRouter()
@@ -13,9 +12,12 @@ class ChatRequest(BaseModel):
 @router.post("/chat")
 def chat(request: ChatRequest):
 
-    answer = ask_pdf(request.question)
+    result = ask_pdf(request.question)
 
     return {
+        "status": "success",
         "question": request.question,
-        "answer": answer
+        "answer": result["answer"],
+        "source": result["source"],
+        "distance": result["distance"]
     }

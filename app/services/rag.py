@@ -6,33 +6,24 @@ def ask_pdf(question):
 
     results = search(question)
 
-    context = ""
-
-    if "documents" in results and len(results["documents"]) > 0:
-
-        context = "\n\n".join(results["documents"][0])
+    context = "\n".join(results["documents"][0])
 
     prompt = f"""
-You are an Industrial Knowledge Assistant.
+You are an AI assistant.
 
-Answer ONLY using the context below.
-
-If the answer is not present in the context,
-reply with:
-
-"I could not find the answer in the uploaded documents."
+Answer the question only from the given context.
 
 Context:
-
 {context}
 
 Question:
-
 {question}
-
-Answer:
 """
 
     answer = ask_gemini(prompt)
 
-    return answer
+    return {
+        "answer": answer,
+        "source": results["documents"][0],
+        "distance": results["distances"][0]
+    }
