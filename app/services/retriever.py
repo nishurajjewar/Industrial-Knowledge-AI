@@ -9,6 +9,7 @@ collection = client.get_or_create_collection(
 
 model = None
 
+
 def get_model():
     global model
 
@@ -30,4 +31,5 @@ def search(query):
         n_results=3
     )
 
-    return results["documents"][0]
+    # Return complete result
+    return results
