@@ -1,4 +1,6 @@
 from app.api.chat import router as chat_router
+from app.api.upload import router as upload_router
+
 from app.services.gemini import ask_gemini
 from app.services.retriever import search
 from app.services.vectordb import store_embeddings
@@ -13,13 +15,17 @@ app = FastAPI(
     version="1.0.0"
 )
 
+# Routers
 app.include_router(chat_router)
+app.include_router(upload_router)
+
 
 @app.get("/")
 def home():
     return {
         "message": "AI Service is Running 🚀"
     }
+
 
 @app.get("/test")
 def test():
@@ -35,12 +41,10 @@ def test():
     store_embeddings(chunks, embeddings)
 
     return {
-
-        "Status":"Stored Successfully",
-
-        "Chunks":len(chunks)
-
+        "Status": "Stored Successfully",
+        "Chunks": len(chunks)
     }
+
 
 @app.get("/search")
 def semantic_search(query: str):
@@ -51,6 +55,8 @@ def semantic_search(query: str):
         "query": query,
         "results": documents
     }
+
+
 @app.get("/gemini-test")
 def gemini_test():
 
@@ -58,4 +64,16 @@ def gemini_test():
 
     return {
         "response": answer
+    }
+
+
+@app.get("/health")
+def health():
+
+    return {
+        "status": "healthy",
+        "service": "Industrial Knowledge AI",
+        "database": "Connected",
+        "model": "Gemini 2.5 Flash",
+        "vectordb": "ChromaDB"
     }

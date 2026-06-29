@@ -5,26 +5,53 @@ function ChatWindow() {
     { role: 'assistant', text: 'Hi! Upload a document and ask me any question about it.' }
   ]);
   const [input, setInput] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  const handleSend = () => {
+  const handleSend = async () => {
     if (!input.trim()) return;
 
     const userMessage = { role: 'user', text: input };
     setMessages((prev) => [...prev, userMessage]);
     setInput('');
+    setLoading(true);
 
-    // Day 2: this will call Person B's backend /query route
-    // For now, showing a dummy response so the UI can be tested
-    setTimeout(() => {
+    try {
+      const response = await fetch('http://localhost:5000/query', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ question: userMessage.text }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Backend returned an error');
+      }
+
+      const data = await response.json();
+
+      const citationText = data.citations && data.citations.length > 0
+        ? `Source: ${data.citations.map((c) => c.source).join(', ')}`
+        : null;
+
       setMessages((prev) => [
         ...prev,
         {
           role: 'assistant',
-          text: 'This is a dummy answer — the real RAG response will appear here on Day 2.',
-          citation: 'Source: sample_manual.pdf, Page 4'
-        }
+          text: data.answer || 'No answer received.',
+          citation: citationText,
+        },
       ]);
-    }, 600);
+    } catch (error) {
+      console.error('Query failed:', error);
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: 'assistant',
+          text: 'Could not reach the knowledge base right now. Please make sure the backend and AI service are running.',
+        },
+      ]);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleKeyPress = (e) => {
@@ -42,6 +69,11 @@ function ChatWindow() {
             {msg.citation && <span className="citation">{msg.citation}</span>}
           </div>
         ))}
+        {loading && (
+          <div className="chat-bubble assistant">
+            <p>Thinking...</p>
+          </div>
+        )}
       </div>
 
       <div className="chat-input-row">
@@ -51,8 +83,11 @@ function ChatWindow() {
           onChange={(e) => setInput(e.target.value)}
           onKeyPress={handleKeyPress}
           placeholder="Type your question here..."
+          disabled={loading}
         />
-        <button onClick={handleSend}>Send</button>
+        <button onClick={handleSend} disabled={loading}>
+          {loading ? 'Sending...' : 'Send'}
+        </button>
       </div>
     </div>
   );

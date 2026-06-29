@@ -1,38 +1,54 @@
 from app.services.retriever import search
 from app.services.gemini import ask_gemini
+from app.prompts.rag_prompt import RAG_PROMPT
+
+from app.memory.chat_memory import (
+    add_message,
+    get_history
+)
 
 
 def ask_pdf(question):
 
+    # Save user question
+    add_message("User", question)
+
+    # Search ChromaDB
     results = search(question)
 
-    context = ""
+    # Create context
+    context = "\n".join(results["documents"][0])
 
-    if "documents" in results and len(results["documents"]) > 0:
+    # Previous Conversation
+    history = ""
 
-        context = "\n\n".join(results["documents"][0])
+    for chat in get_history():
+        history += f"{chat['role']}: {chat['message']}\n"
 
-    prompt = f"""
-You are an Industrial Knowledge Assistant.
+    # Create Prompt
+    prompt = RAG_PROMPT.format(
+        context=context,
+        question=question
+    )
 
-Answer ONLY using the context below.
+    prompt += f"""
 
-If the answer is not present in the context,
-reply with:
+Conversation History:
 
-"I could not find the answer in the uploaded documents."
-
-Context:
-
-{context}
-
-Question:
-
-{question}
-
-Answer:
+{history}
 """
 
+    # Ask Gemini
     answer = ask_gemini(prompt)
 
-    return answer
+    # Save AI response
+    add_message("Assistant", answer)
+
+    # Confidence Score
+    confidence = round((1 - results["distances"][0][0]) * 100, 2)
+
+    return {
+        "answer": answer,
+        "confidence": confidence,
+        "sources": results["documents"][0]
+    }
